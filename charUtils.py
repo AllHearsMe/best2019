@@ -21,8 +21,9 @@ charType = {ch: k for k in range(componentCount) for ch in charList[k]}
 charType[blankChar] = -1
 
 onehotIdx = list(np.cumsum(charCount))
+onehotOffset = [0]+onehotIdx[:-1]
 onehotLen = onehotIdx[-1]
-onehotSlices = [slice(s, e) for (s, e) in zip([0]+onehotIdx[:-1], onehotIdx)]
+onehotSlices = [slice(s, e) for (s, e) in zip(onehotOffset, onehotIdx)]
 
 def str2idx(s, length=0):
     idx = []
