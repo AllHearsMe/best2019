@@ -42,18 +42,12 @@ def idx2str(idx):
     return ''.join(s)
 
 def idx2onehot(idx):
-    l = []
-    for i in range(componentCount):
-        l.append(toOnehot[i][idx[:, i]])
+    l = [toOnehot[i][idx[:, i]] for i in range(componentCount)]
     onehot = np.concatenate(l, axis=-1)
     return onehot
 
 def onehot2idx(onehot):
-    l = []
-    pos = 0
-    for i in range(componentCount):
-        l.append(np.argmax(onehot[..., pos:pos+charCount[i]], axis=-1)[..., None])
-        pos += charCount[i]
+    l = [np.argmax(onehot[..., sl], axis=-1)[..., None] for sl in onehotSlices]
     return np.concatenate(l, axis=-1)
 
 def str2onehot(str, length=0):
