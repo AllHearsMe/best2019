@@ -3,7 +3,7 @@ import numpy as np
 import charUtils
 import cv2
 
-def gen_text_image(s, face, height, yScatter=0, xScatter=0, maxSlant=0, inclSlantUp=False):
+def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant=0, inclSlantUp=False):
     slotLen = len(charUtils.str2idx(s))
     yPos = np.empty((len(s), 2), dtype=int)
     xPos = np.empty((len(s), 2), dtype=int)
@@ -37,6 +37,32 @@ def gen_text_image(s, face, height, yScatter=0, xScatter=0, maxSlant=0, inclSlan
     canvas = canvas[:height+slantOffset, :advance+xMax]
     scale = height / canvas.shape[0]
     canvas = cv2.resize(canvas, dsize=(0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    if width:
+        if width > canvas.shape[1]:
+            canvas = np.pad(canvas, [(0, 0), (0, width - canvas.shape[1])], 'edge')
+        else:
+            canvas = canvas[:, :width]
+    canvas = canvas.astype(int)
+    
     xPos = (xPos*scale).astype(int)
     yPos = (yPos*scale).astype(int)
     return canvas, xPos, yPos
+
+def make_labels(s, xPos, length, windowSizes=[20, 30, 40]):
+    windowSizes = np.array(windowSizes)
+    xDiff = np.diff(xPos, axis=1).flatten()
+    xBin = np.searchsorted(windowSizes, xDiff)
+    xBin = np.minimum(xBin, len(windowSizes)-1)
+    widths = np.maximum(windowSizes[xBin] - xDiff, 0) + 1
+    
+    labels = np.zeros((charUtils.onehotLen, length))
+    for ch, x, w in zip(s, xPos[:, 0], widths):
+        t = charUtils.charType[ch]
+        idx = charUtils.onehotIdx[ch]
+        labels[idx, x:x+w] = 1
+    
+    for sl in charUtils.onehotSlices:
+        roi = labels[sl]
+        roi[0, roi.max(axis=0) == 0] = 1
+    
+    return labels
