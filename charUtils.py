@@ -20,10 +20,11 @@ toOnehot = [np.eye(charCount[k]) for k in range(componentCount)]
 charType = {ch: k for k in range(componentCount) for ch in charList[k]}
 charType[blankChar] = -1
 
-onehotIdx = list(np.cumsum(charCount))
-onehotOffset = [0]+onehotIdx[:-1]
-onehotLen = onehotIdx[-1]
-onehotSlices = [slice(s, e) for (s, e) in zip(onehotOffset, onehotIdx)]
+onehotOffsetEnd = list(np.cumsum(charCount))
+onehotOffset = [0]+onehotOffsetEnd[:-1]
+onehotLen = onehotOffsetEnd[-1]
+onehotSlices = [slice(s, e) for (s, e) in zip(onehotOffset, onehotOffsetEnd)]
+onehotIdx = {ch: (charIdx[t][ch] + onehotOffset[t]) for t in range(componentCount) for ch in charList[t]}
 
 def str2idx(s, length=0):
     idx = []
