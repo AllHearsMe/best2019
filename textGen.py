@@ -3,7 +3,8 @@ import numpy as np
 import charUtils
 import cv2
 
-def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant=0, inclSlantUp=False):
+# TODO: remove safePad if possible, separate position calculation and actual generation
+def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant=0, inclSlantUp=False, safePad=20):
     slotLen = len(charUtils.str2idx(s))
     yPos = np.empty((len(s), 2), dtype=int)
     xPos = np.empty((len(s), 2), dtype=int)
@@ -13,10 +14,10 @@ def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant
     slant = np.random.randint(maxSlant+1)
     slantDir = np.random.choice((-1, 1)) if inclSlantUp else 1
     slantOffset = slant*(slotLen)
-    canvas = np.zeros((height+2*yScatter+slantOffset, (xMax-xMin)*(slotLen+1)))
-    origin = yMax+yScatter+slantOffset*(slantDir < 0)
+    canvas = np.zeros((height+2*yScatter+slantOffset+2*safePad, (xMax-xMin)*(slotLen+1)+2*safePad))
+    origin = yMax+yScatter+slantOffset*(slantDir < 0)+safePad
     face.load_char(s[0])
-    advance = -face.glyph.bitmap_left-xMin
+    advance = -face.glyph.bitmap_left-xMin+safePad
     for i, ch in enumerate(s):
         face.load_char(ch)
         glyph = face.glyph
@@ -34,7 +35,7 @@ def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant
         box[:] = np.maximum(pixels, box)
         advance += metrics.horiAdvance // 64
         origin += slant * slantDir * (glyph.bitmap_left >= 0)
-    canvas = canvas[:height+slantOffset, :advance+xMax]
+    canvas = canvas[safePad:height+slantOffset+safePad, safePad:advance+xMax]
     scale = height / canvas.shape[0]
     canvas = cv2.resize(canvas, dsize=(0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     if width:
