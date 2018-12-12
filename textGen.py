@@ -45,8 +45,8 @@ def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant
             canvas = canvas[:, :width]
     canvas = canvas.astype(int)
     
-    xPos = (xPos*scale).astype(int)
-    yPos = (yPos*scale).astype(int)
+    xPos = ((xPos - safePad)*scale).astype(int)
+    yPos = ((yPos - safePad)*scale).astype(int)
     return canvas, xPos, yPos
 
 def make_labels(s, xPos, length, windowSizes=[20, 30, 40]):
