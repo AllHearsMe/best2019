@@ -51,16 +51,35 @@ def gen_text_image(s, face, height, width=None, yScatter=0, xScatter=0, maxSlant
 
 def make_labels(s, xPos, length, windowSizes=[20, 30, 40]):
     windowSizes = np.array(windowSizes)
-    xDiff = np.diff(xPos, axis=1).flatten()
-    xBin = np.searchsorted(windowSizes, xDiff)
-    xBin = np.minimum(xBin, len(windowSizes)-1)
-    widths = np.maximum(windowSizes[xBin] - xDiff, 0) + 1
+    windowSizes.sort()
+    
+    types = np.array([charUtils.charType[ch] for ch in s])
+    _s = np.array(list(s))
+    sByType = np.array([_s[types == i] for i in range(charUtils.componentCount)])
+    xLeft = [xPos[types == i, 0] for i in range(charUtils.componentCount)]
+    xRight = [xPos[types == i, 1] for i in range(charUtils.componentCount)]
+    xPrev = [np.concatenate([[max(0, xr[0]-windowSizes[-1])], xr[:-1]]) for xr in xRight]
+    xDiff = [(xr - xp) for xr, xp in zip(xRight, xPrev)]
+    xDiff = [np.minimum(xd, windowSizes[-1]) for xd in xDiff]
+    
+    xBin = [np.searchsorted(windowSizes, xd) for xd in xDiff]
+    xBin = [np.minimum(xb, len(windowSizes)-1) for xb in xBin]
+#     starts = [np.maximum(np.minimum(xr - windowSizes[xb] + 1, xl), 0) for xb, xl, xr in zip(xBin, xLeft, xRight)]
+    starts = [np.clip(xr - windowSizes[xb] + 1, 0, xl) for xb, xl, xr in zip(xBin, xLeft, xRight)]
     
     labels = np.zeros((charUtils.onehotLen, length))
-    for ch, x, w in zip(s, xPos[:, 0], widths):
-        t = charUtils.charType[ch]
-        idx = charUtils.onehotIdx[ch]
-        labels[idx, x:x+w] = 1
+    for t in range(charUtils.componentCount):
+        for ch, st, lf in zip(sByType[t], starts[t], xLeft[t]):
+            idx = charUtils.onehotIdx[ch]
+            labels[idx, st:lf+1] = 1
+    
+    leftmost = min([xl.min() for xl in xLeft])
+    rightmost = max([xr.max() for xr in xRight])
+    labels[charUtils.onehotIdx[' '], :np.clip(leftmost-windowSizes[0]+1, 0, starts[0][0])] = 1
+    labels[charUtils.onehotIdx[' '], min(rightmost+windowSizes[0], length):] = 1
+    for st, ed in zip(xRight[0][:-1], xLeft[0][1:]):
+#         In case st > the latter, this line inserts nothing
+        labels[charUtils.onehotIdx[' '], st:ed-windowSizes[0]+1] = 1
     
     for sl in charUtils.onehotSlices:
         roi = labels[sl]
