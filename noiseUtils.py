@@ -83,7 +83,7 @@ def make_noise(grid=None, imshape=(225, 2200, 1), grid_size=(1, 2), random_offse
         y += np.random.random()
     p = perlin(x, y)
     p = (p / np.abs(p).max() / 2 + 0.5) * color_range
-    return p
+    return p.reshape(p.shape + (1,)*max(len(imshape)-2, 0))
 
 
 # TODO separate the randomization
