@@ -208,7 +208,7 @@ def gen(fontfaces, lines, useAllFonts=False, repeats=1, batch_size=16, imshape=(
                    xOffset:xOffset+tempCanvas.shape[1]] = tempCanvas
             x[i%batch_size] = (255-canvas)
             if np.random.random() < noiseChance:
-                x[i%batch_size] = noiseUtils.random_noise(x[i%batch_size])
+                x[i%batch_size] = noiseUtils.random_background(x[i%batch_size])
             if np.random.random() < lightingChance:
                 x[i%batch_size] = noiseUtils.random_lighting(x[i%batch_size], gain_range=(0.5, 1.0))
             xLen[i%batch_size] = dataLen
